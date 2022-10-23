@@ -10,13 +10,13 @@ impl TimeInTime {
     pub fn new(total_secs: u64) -> Self {
         TimeInTime { total_secs }
     }
-    pub fn with_ms(secs: u64, mins: u64) -> Self {
+    pub fn with_ms(mins: u64, secs: u64) -> Self {
         TimeInTime {
             total_secs: secs + (mins * 60),
         }
     }
 
-    pub fn with_hms(secs: u64, mins: u64, hours: u64) -> Self {
+    pub fn with_hms(hours: u64, mins: u64, secs: u64) -> Self {
         TimeInTime {
             total_secs: secs + (mins * 60) + (hours * 60 * 60),
         }

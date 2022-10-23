@@ -113,6 +113,16 @@ fn usage() {
 }
 
 fn main() {
+    let seq: Vec<_> = vec![1, 2, 3];
+    let mut reference = &seq[0];
+
+    {
+        let mut iterator = seq.iter();
+        iterator.next().unwrap();
+        reference = iterator.next().unwrap();
+    }
+
+    println!("{reference}");
     // (1..40) is a range.
     //
     // into_iter() creates iterator which takes owner ship of range and iterates over every
@@ -125,11 +135,11 @@ fn main() {
     // This iterator now operates on the filter iterator in an inner field.
     //
     // x is an element returned by the Hopper iterator.
-    for x in (1..40)
-        .into_iter()
-        .filter(|x| *x % 2 == 1)
-        .hopp_past_start(4, 7)
-    {
-        println!("{:?}", x);
-    }
+    // for x in (1..40)
+    //     .into_iter()
+    //     .filter(|x| *x % 2 == 1)
+    //     .hopp_past_start(4, 7)
+    // {
+    //     println!("{:?}", x);
+    // }
 }
