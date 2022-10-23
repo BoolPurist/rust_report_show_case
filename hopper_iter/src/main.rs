@@ -105,6 +105,7 @@ impl<I: Iterator> HopperExt for I {}
 /// Param1: 2 print up to 2 numbers.
 /// Param1: 3 After 2 numbers skip the next 3 numbers.
 /// output: [1, 2, 6, 7, 11, 12, 16, 17]
+#[allow(dead_code)]
 fn usage() {
     for x in (1..20).into_iter().hopp(2, 3) {
         println!("{:?}", x);
