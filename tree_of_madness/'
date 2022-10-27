@@ -1,0 +1,40 @@
+use crate::node::{Node, RootNode};
+use crate::tree::Tree;
+use std::borrow::Borrow;
+use std::cell::RefCell;
+use std::rc::Rc;
+pub struct TreeIntoIter<T> {
+    current_nodes: Vec<RootNode<T>>,
+}
+
+impl<T> Tree<T> {
+    pub fn iter(&self) -> TreeIntoIter<T> {
+        match self.root.as_ref() {
+            Some(root) => TreeIntoIter {
+                current_nodes: vec![Rc::clone(&root)],
+            },
+            None => TreeIntoIter {
+                current_nodes: Vec::new(),
+            },
+        }
+    }
+}
+
+impl<T> Iterator for TreeIntoIter<T> {
+    type Item = RefCell<T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(next_node) = self.current_nodes.pop() {
+            let l: &Node<T> = next_node.borrow();
+            if let Some(ref_left) = next_node.borrow() {
+                self.current_nodes.push(ref_left);
+            }
+            if let Some(right_next) = Node::take_right_child(&next_node) {
+                self.current_nodes.push(&right_next);
+            };
+
+            return Some(next_node.borrow().get_value_ref());
+        }
+
+        None
+    }
+}
