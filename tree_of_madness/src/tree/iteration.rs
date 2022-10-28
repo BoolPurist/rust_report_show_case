@@ -21,11 +21,11 @@ impl<T> Iterator for IterShared<T> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(next) = self.nodes.pop_front() {
             let next_borrow = next.borrow();
-            if let Some(left) = next_borrow.get_left_child() {
+            if let Some(left) = next_borrow.get_left_child_shared() {
                 self.nodes.push_back(left);
             };
 
-            if let Some(right) = next.borrow().get_right_child() {
+            if let Some(right) = next.borrow().get_right_child_shared() {
                 self.nodes.push_back(right);
             };
 

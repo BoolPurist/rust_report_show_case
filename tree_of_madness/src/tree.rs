@@ -36,7 +36,7 @@ impl<T: Ord> Tree<T> {
                         return SearchResult::Found(Rc::clone(&current_node));
                     }
                     Ordering::Less => {
-                        let left_child = current_node.borrow().get_left_child();
+                        let left_child = current_node.borrow().get_left_child_shared();
                         if let Some(new_current_node_child) = left_child {
                             current_node = new_current_node_child;
                         } else {
@@ -47,7 +47,7 @@ impl<T: Ord> Tree<T> {
                         }
                     }
                     Ordering::Greater => {
-                        let right_child = current_node.borrow().get_right_child();
+                        let right_child = current_node.borrow().get_right_child_shared();
                         if let Some(new_right_child) = right_child {
                             current_node = new_right_child;
                         } else {
@@ -139,6 +139,17 @@ impl<T: Ord> Tree<T> {
                 tree.root = Some(new_child);
             }
         }
+    }
+}
+#[cfg(test)]
+impl<T> Tree<T> {
+    fn get_root_node(&self) -> RootNode<T> {
+        Rc::clone(
+            &self
+                .root
+                .as_ref()
+                .expect("No root found to return for test."),
+        )
     }
 }
 
@@ -249,5 +260,32 @@ mod testing {
         assert!(tree.contains(&83));
         //            80
         //          40  83
+    }
+
+    #[test]
+    fn should_find_no_greatest_left_node() {
+        let tree = build_tree![100];
+        let root = tree.get_root_node();
+
+        let actual_node_found = Node::find_greatest_node_from(&root);
+
+        assert!(actual_node_found.is_none());
+    }
+
+    #[test]
+    fn should_find_greatest_from_left_node() {
+        let tree = build_tree![100, 25, 50, 200, 400];
+        let root = tree.get_root_node();
+
+        assert_greatest_node_subtree(&root, 400);
+        assert_greatest_node_subtree(&root.borrow().get_left_child_shared().unwrap(), 50);
+        assert_greatest_node_subtree(&root.borrow().get_right_child_shared().unwrap(), 400);
+    }
+
+    fn assert_greatest_node_subtree(subroot: &RootNode<i32>, expected_value: i32) {
+        let actual_node_found = Node::find_greatest_node_from(&subroot)
+            .expect("No greatest node from left was returned.");
+
+        assert_eq!(&expected_value, actual_node_found.borrow().get_value_ref());
     }
 }
