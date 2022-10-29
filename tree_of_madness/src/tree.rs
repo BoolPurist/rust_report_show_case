@@ -2,7 +2,9 @@ pub mod iteration;
 
 use crate::node::{DiretionFromParent, Node, RootNode};
 use std::cmp::Ordering;
+use std::fmt::Debug;
 use std::rc::Rc;
+
 #[derive(Debug)]
 pub struct Tree<T> {
     root: Option<RootNode<T>>,
@@ -12,6 +14,7 @@ enum SearchResult<T> {
     Found(RootNode<T>),
     ClosestToValue(RootNode<T>, DiretionFromParent),
 }
+
 #[macro_export]
 macro_rules! build_tree {
     ($($v:expr),*) => {{
@@ -119,7 +122,19 @@ impl<T: Ord> Tree<T> {
 
                         replace_found_with_taken_child(self, gone_with_it, new_left_child);
                     }
-                    (true, true) => unimplemented!(),
+                    (true, true) => {
+                        let left_detached = Node::take_left_child(&gone_with_it)
+                            .expect("Should have a left child at this point");
+                        let right_detached = Node::take_right_child(&gone_with_it)
+                            .expect("Should have a right child at this point");
+
+                        let largest_node = Node::extract_greatest_node_from(&left_detached);
+
+                        Node::replace_left_child_with(&largest_node, left_detached);
+                        Node::replace_right_child_with(&largest_node, right_detached);
+
+                        Node::let_parent_replace_child_with(gone_with_it, largest_node);
+                    }
                 };
 
                 true
@@ -142,7 +157,7 @@ impl<T: Ord> Tree<T> {
     }
 }
 #[cfg(test)]
-impl<T> Tree<T> {
+impl<T: Ord> Tree<T> {
     fn get_root_node(&self) -> RootNode<T> {
         Rc::clone(
             &self
@@ -287,5 +302,26 @@ mod testing {
             .expect("No greatest node from left was returned.");
 
         assert_eq!(&expected_value, actual_node_found.borrow().get_value_ref());
+    }
+
+    #[test]
+    fn should_remove_node_with_left_right_children() {
+        //      100
+        //    25
+        //  10   30
+        // 5
+        let mut tree = build_tree![100, 25, 10, 30];
+
+        let has_deleted = tree.delete(&25);
+
+        //     100
+        //    30
+        //  10
+        // 5
+        assert!(has_deleted);
+
+        let actual_nodes: Vec<_> = tree.iter_shared().collect();
+        // let expected_nodes = vec![100, 30, 10, 5];
+        // assert_eq!(expected_nodes, actual_nodes);
     }
 }

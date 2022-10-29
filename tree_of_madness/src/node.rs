@@ -213,6 +213,22 @@ impl<T> Node<T> {
         previous_node
     }
 
+    pub fn extract_greatest_node_from(to_search_from: &RootNode<T>) -> RootNode<T> {
+        match Self::find_greatest_node_from(to_search_from) {
+            Some(ref largest_node) => {
+                if let Some(left_child_largest) = Self::take_left_child(largest_node) {
+                    _ = Self::let_parent_replace_child_with(
+                        Rc::clone(largest_node),
+                        left_child_largest,
+                    );
+                }
+
+                Rc::clone(largest_node)
+            }
+            None => Rc::clone(to_search_from),
+        }
+    }
+
     pub fn left_right_taken(&self) -> (bool, bool) {
         (self.left.is_some(), self.right.is_some())
     }

@@ -25,7 +25,7 @@ impl<T> Iterator for IterShared<T> {
                 self.nodes.push_back(left);
             };
 
-            if let Some(right) = next.borrow().get_right_child_shared() {
+            if let Some(right) = next_borrow.get_right_child_shared() {
                 self.nodes.push_back(right);
             };
 
