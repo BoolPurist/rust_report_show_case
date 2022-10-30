@@ -78,7 +78,11 @@ impl<T: Ord> Tree<T> {
                 match direction {
                     DiretionFromParent::Left => Node::spawn_left_child(&attach_to, new_value),
                     DiretionFromParent::Right => Node::spawn_right_child(&attach_to, new_value),
-                    DiretionFromParent::NoParent => panic!("Can not add value to tree.\nReason: missing side(left, right) where to insert new value."),
+                    DiretionFromParent::NoParent => panic!(
+                        "{}\n{}",
+                        "Can not add value to tree.",
+                        "Reason: missing side(left, right) where to insert new value."
+                    ),
                 };
 
                 true
@@ -103,7 +107,10 @@ impl<T: Ord> Tree<T> {
         }
     }
 
-    pub fn delete(&mut self, to_delete: &T) -> bool {
+    pub fn delete(&mut self, to_delete: &T) -> bool
+    where
+        T: Ord + Debug,
+    {
         return match Self::find_value_from(&self.root, to_delete) {
             SearchResult::TreeEmpty | SearchResult::ClosestToValue(..) => false,
             SearchResult::Found(gone_with_it) => {
@@ -114,13 +121,13 @@ impl<T: Ord> Tree<T> {
                         let new_right_child = Node::take_right_child(&gone_with_it)
                             .expect("Here it is known that there is a right child.");
 
-                        replace_found_with_taken_child(self, gone_with_it, new_right_child);
+                        let_parent_or_root_replace_child_with(self, gone_with_it, new_right_child);
                     }
                     (true, false) => {
                         let new_left_child = Node::take_left_child(&gone_with_it)
                             .expect("Here it is known that there is a left child.");
 
-                        replace_found_with_taken_child(self, gone_with_it, new_left_child);
+                        let_parent_or_root_replace_child_with(self, gone_with_it, new_left_child);
                     }
                     (true, true) => {
                         let left_detached = Node::take_left_child(&gone_with_it)
@@ -128,12 +135,26 @@ impl<T: Ord> Tree<T> {
                         let right_detached = Node::take_right_child(&gone_with_it)
                             .expect("Should have a right child at this point");
 
-                        let largest_node = Node::extract_greatest_node_from(&left_detached);
-
-                        Node::replace_left_child_with(&largest_node, left_detached);
-                        Node::replace_right_child_with(&largest_node, right_detached);
-
-                        Node::let_parent_replace_child_with(gone_with_it, largest_node);
+                        match Node::extract_greatest_node_from(&left_detached) {
+                            Some(largest_node) => {
+                                Node::replace_left_child_with(&largest_node, left_detached);
+                                Node::replace_right_child_with(&largest_node, right_detached);
+                                let_parent_or_root_replace_child_with(
+                                    self,
+                                    gone_with_it,
+                                    largest_node,
+                                );
+                            }
+                            None => {
+                                let largest_node = left_detached;
+                                Node::replace_left_child_with(&largest_node, right_detached);
+                                let_parent_or_root_replace_child_with(
+                                    self,
+                                    gone_with_it,
+                                    largest_node,
+                                );
+                            }
+                        };
                     }
                 };
 
@@ -141,7 +162,7 @@ impl<T: Ord> Tree<T> {
             }
         };
 
-        fn replace_found_with_taken_child<T>(
+        fn let_parent_or_root_replace_child_with<T>(
             tree: &mut Tree<T>,
             gone_with_it: RootNode<T>,
             new_child: RootNode<T>,
@@ -306,22 +327,34 @@ mod testing {
 
     #[test]
     fn should_remove_node_with_left_right_children() {
-        //      100
-        //    25
-        //  10   30
-        // 5
-        let mut tree = build_tree![100, 25, 10, 30];
+        asssert_deletion_with_children(build_tree![100, 25, 50, 10, 30], 25, &[100, 10, 50, 30]);
+        asssert_deletion_with_children(build_tree![100, 25, 10, 30, 40], 25, &[100, 10, 30, 40]);
+        asssert_deletion_with_children(
+            build_tree![100, 25, 10, 8, 12, 30],
+            25,
+            &[100, 12, 10, 30, 8],
+        );
+        asssert_deletion_with_children(
+            build_tree![100, -2, -8, 50, 25, 250, 110, 124],
+            50,
+            &[100, -2, 250, -8, 25, 110, 124],
+        );
+        asssert_deletion_with_children(
+            build_tree![100, 25, 200, 120, 300, 250],
+            100,
+            &[25, 200, 120, 300, 250],
+        );
+        asssert_deletion_with_children(build_tree![100, 25, 200], 100, &[25, 200]);
+    }
 
-        let has_deleted = tree.delete(&25);
-
-        //     100
-        //    30
-        //  10
-        // 5
+    fn asssert_deletion_with_children(mut tree: Tree<i32>, to_delete: i32, expected: &[i32]) {
+        let has_deleted = tree.delete(&to_delete);
+        let actual: Vec<_> = tree.iter_shared().collect();
+        let expected_rc: Vec<_> = expected.iter().map(|v| Rc::new(v.clone())).collect();
         assert!(has_deleted);
-
-        let actual_nodes: Vec<_> = tree.iter_shared().collect();
-        // let expected_nodes = vec![100, 30, 10, 5];
-        // assert_eq!(expected_nodes, actual_nodes);
+        assert_eq!(
+            expected_rc, actual,
+            "Not expected elements after deletion of node with value {to_delete}"
+        );
     }
 }

@@ -201,10 +201,11 @@ impl<T> Node<T> {
         }
     }
 
+    /// Returns the node with the largest value from the parameter to_search_from as root.
+    /// Returns none if the to_search_from has no children.
     pub fn find_greatest_node_from(to_search_from: &RootNode<T>) -> Option<RootNode<T>> {
         let mut previous_node = None;
         let mut current_largest = to_search_from.borrow().get_right_child_shared();
-
         while let Some(next_right_node) = current_largest {
             previous_node = Some(Rc::clone(&next_right_node));
             current_largest = next_right_node.borrow().get_right_child_shared();
@@ -213,20 +214,19 @@ impl<T> Node<T> {
         previous_node
     }
 
-    pub fn extract_greatest_node_from(to_search_from: &RootNode<T>) -> RootNode<T> {
-        match Self::find_greatest_node_from(to_search_from) {
-            Some(ref largest_node) => {
-                if let Some(left_child_largest) = Self::take_left_child(largest_node) {
-                    _ = Self::let_parent_replace_child_with(
-                        Rc::clone(largest_node),
-                        left_child_largest,
-                    );
-                }
+    /// Searches the node with largest node from the parameter to_search_from as root.
+    /// Then if any
+    /// Returns none if the parameter to_search_from has no right children
+    pub fn extract_greatest_node_from(to_search_from: &RootNode<T>) -> Option<RootNode<T>> {
+        let largest_node = Self::find_greatest_node_from(to_search_from)?;
 
-                Rc::clone(largest_node)
-            }
-            None => Rc::clone(to_search_from),
+        if let Some(left_child_largest) = Self::take_left_child(&largest_node) {
+            _ = Self::let_parent_replace_child_with(Rc::clone(&largest_node), left_child_largest);
+        } else {
+            _ = Self::take_child_from_parent(&largest_node);
         }
+
+        Some(largest_node)
     }
 
     pub fn left_right_taken(&self) -> (bool, bool) {
